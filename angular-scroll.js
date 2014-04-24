@@ -1,3 +1,7 @@
+// Blake hacked this into working with the minification system we are using
+// the original code didn't do minification-friendly angular injections
+// and in the first run function this.$get was throwing, this was undefined...
+
 /**
   * x is a value between 0 and 1, indicating where in the animation you are.
   */
@@ -18,10 +22,11 @@ angular.module('duScroll', [
   .value('duScrollEasing', duScrollDefaultEasing);
 
 
+var minificationWorkaround;
 angular.module('duScroll.scrollHelpers', []).
-run(function($window, $q, cancelAnimation, requestAnimation, duScrollEasing) {
+run(['$window', '$q', 'cancelAnimation', 'requestAnimation', 'duScrollEasing', minificationWorkaround = function($window, $q, cancelAnimation, requestAnimation, duScrollEasing) {
   var proto = angular.element.prototype;
-  this.$get = function() {
+  minificationWorkaround.$get = function() {
     return proto;
   };
   
@@ -127,12 +132,12 @@ run(function($window, $q, cancelAnimation, requestAnimation, duScrollEasing) {
     return el.scrollTop;
   };
 
-});
+}]);
 
 
 //Adapted from https://gist.github.com/paulirish/1579671
 angular.module('duScroll.polyfill', []).
-factory('polyfill', function($window) {
+factory('polyfill', ['$window', function($window) {
   var vendors = ['webkit', 'moz', 'o', 'ms'];
 
   return function(fnName, fallback) {
@@ -148,10 +153,10 @@ factory('polyfill', function($window) {
     }
     return fallback;
   };
-});
+}]);
 
 angular.module('duScroll.requestAnimation', ['duScroll.polyfill']).
-factory('requestAnimation', function(polyfill, $timeout) {
+factory('requestAnimation', ['polyfill', '$timeout', function(polyfill, $timeout) {
   var lastTime = 0;
   var fallback = function(callback, element) {
     var currTime = new Date().getTime();
@@ -163,18 +168,18 @@ factory('requestAnimation', function(polyfill, $timeout) {
   };
   
   return polyfill('requestAnimationFrame', fallback);
-}).
-factory('cancelAnimation', function(polyfill, $timeout) {
+}]).
+factory('cancelAnimation', ['polyfill', '$timeout', function(polyfill, $timeout) {
   var fallback = function(promise) {
     $timeout.cancel(promise);
   };
 
   return polyfill('cancelAnimationFrame', fallback);
-});
+}]);
 
 
 angular.module('duScroll.spyAPI', ['duScroll.scrollContainerAPI']).
-factory('spyAPI', function($rootScope, scrollContainerAPI) {
+factory('spyAPI', ['$rootScope', 'scrollContainerAPI', function($rootScope, scrollContainerAPI) {
   var createScrollHandler = function(context) {
     return function() {
       var container = context.container, 
@@ -290,11 +295,11 @@ factory('spyAPI', function($rootScope, scrollContainerAPI) {
     destroyContext: destroyContext,
     getContextForScope: getContextForScope
   };
-});
+}]);
 
 
 angular.module('duScroll.scrollContainerAPI', []).
-factory('scrollContainerAPI', function($document) {
+factory('scrollContainerAPI', [ '$document', function($document) {
   var containers = {};
 
   var setContainer = function(scope, element) {
@@ -331,11 +336,11 @@ factory('scrollContainerAPI', function($document) {
     setContainer:     setContainer,
     removeContainer:  removeContainer
   };
-});
+}]);
 
 
 angular.module('duScroll.smoothScroll', ['duScroll.scrollHelpers', 'duScroll.scrollContainerAPI']).
-directive('duSmoothScroll', function(duScrollDuration, scrollContainerAPI){
+directive('duSmoothScroll', ['duScrollDuration', 'scrollContainerAPI', function(duScrollDuration, scrollContainerAPI){
 
   return {
     link : function($scope, $element, $attr){
@@ -359,11 +364,11 @@ directive('duSmoothScroll', function(duScrollDuration, scrollContainerAPI){
       });
     }
   };
-});
+}]);
 
 
 angular.module('duScroll.spyContext', ['duScroll.spyAPI']).
-directive('duSpyContext', function(spyAPI) {
+directive('duSpyContext', ['spyAPI', function(spyAPI) {
   return {
     restrict: 'A',
     scope: true,
@@ -375,11 +380,11 @@ directive('duSpyContext', function(spyAPI) {
       };
     }
   };
-});
+}]);
 
 
 angular.module('duScroll.scrollContainer', ['duScroll.scrollContainerAPI']).
-directive('duScrollContainer', function(scrollContainerAPI){
+directive('duScrollContainer', ['scrollContainerAPI', function(scrollContainerAPI){
   return {
     restrict: 'A',
     scope: true,
@@ -400,11 +405,11 @@ directive('duScrollContainer', function(scrollContainerAPI){
       };
     }
   };
-});
+}]);
 
 
 angular.module('duScroll.scrollspy', ['duScroll.spyAPI']).
-directive('duScrollspy', function(spyAPI, $timeout) {
+directive('duScrollspy', ['spyAPI', '$timeout', function(spyAPI, $timeout) {
   var Spy = function(targetElementOrId, $element, offset) {
     if(angular.isElement(targetElementOrId)) {
       this.target = targetElementOrId;
@@ -460,4 +465,5 @@ directive('duScrollspy', function(spyAPI, $timeout) {
       }, 0);
     }
   };
-});
+}]);
+
