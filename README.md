@@ -1,6 +1,8 @@
 angular-scroll
 ==============
 
+[![Join the chat at https://gitter.im/blak3mill3r/angular-scroll](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/blak3mill3r/angular-scroll?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Only dependent on AngularJS (no jQuery). 6K minified or 1.1K gzipped.
 
 Example
